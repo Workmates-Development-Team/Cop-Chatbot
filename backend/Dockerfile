@@ -14,5 +14,8 @@ COPY . .
 # Sync dependencies
 RUN uv sync
 
+# Expose the port the app runs on
+EXPOSE 5000:5000
+
 # Run the app
 CMD ["uv", "run", "main.py"]
