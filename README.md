@@ -83,9 +83,9 @@ uv run main.py
    ```
 2. Run the container:
    ```sh
-   docker run -p 8000:8000 cop-chatbot-backend
+   docker run -p 5000:5000 cop-chatbot-backend
    ```
-   The backend will be available at [http://localhost:8000](http://localhost:8000)
+   The backend will be available at [http://localhost:5000](http://localhost:5000)
 
 ---
 
