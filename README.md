@@ -8,7 +8,13 @@ A full-stack chatbot application with a React + Vite frontend and a Python FastA
 
 - **Frontend:** Node.js (v18+ recommended) and npm or bun
 - **Backend:** Python 3.9+ (with pip or [uv](https://github.com/astral-sh/uv)), or Docker
-
+- an .env file
+  ```
+   DATABASE_URL=postgresql://<db_user>:<password>@<db_url>
+   AWS_REGION=<your_aws_region>
+   AWS_ACCESS_KEY=<your_access_key>
+   AWS_SECRET_ACCESS_KEY=<your_secret_access_key>
+  ```
 ---
 
 ## Running the Frontend
