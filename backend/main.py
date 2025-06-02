@@ -3,6 +3,7 @@ import json
 import numpy as np
 import psycopg2
 from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 from dotenv import load_dotenv
 import logging
 import os
@@ -41,6 +42,7 @@ client = boto3.client(
 
 # --- Flask App ---
 app = Flask(__name__)
+CORS(app)
 
 # --- Helpers ---
 def get_db_connection():
@@ -196,7 +198,7 @@ def chat():
 
         system_prompt = [{"text": "You are a helpful assistant. Use the provided context to answer the user's question as accurately as possible."}]
         message_list = [{"role": "user", "content": [{"text": prompt}]}]
-        inf_params = {"maxTokens": 500, "topP": 0.9, "topK": 20, "temperature": 0.7}
+        inf_params = {"maxTokens": 1024, "topP": 0.9, "topK": 20, "temperature": 0.7}
 
         request_body = {
             "schemaVersion": "messages-v1",
@@ -234,3 +236,4 @@ def chat():
 if __name__ == "__main__":
     logger.info("Starting Flask app...")
     app.run(host="0.0.0.0", port=5000)
+ 
