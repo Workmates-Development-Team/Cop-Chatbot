@@ -105,7 +105,7 @@ def retrieve_similar_chunks(query_embedding, top_k=3):
 def call_nova_llm(prompt):
     system_prompt = [{"text": "You are a helpful assistant. Use the provided context to answer the user's question as accurately as possible."}]
     message_list = [{"role": "user", "content": [{"text": prompt}]}]
-    inf_params = {"maxTokens": 500, "topP": 0.9, "topK": 20, "temperature": 0.7}
+    inf_params = {"maxTokens": 512, "topP": 0.9, "topK": 20, "temperature": 0.7}
 
     request_body = {
         "schemaVersion": "messages-v1",
