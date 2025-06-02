@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X, Send, MessageCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { backend_url } from './constant';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,7 +71,7 @@ const Chatbot = () => {
           ? inputMessage
           : `${inputMessage} from ${currentCategory}`;
 
-      const response = await fetch('http://127.0.0.1:5001/chat', {
+      const response = await fetch(`${backend_url}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
