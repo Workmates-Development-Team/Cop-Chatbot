@@ -9,6 +9,9 @@ import logging
 import os
 import time
 from functools import wraps
+from werkzeug.utils import secure_filename
+from PyPDF2 import PdfReader
+import docx
 
 load_dotenv()
 
@@ -148,14 +151,35 @@ def call_nova_llm(prompt):
         logger.error(f"LLM call failed: {e}")
         return "Error: LLM call failed."
 
+# Helper function to extract text from PDF
+def extract_text_from_pdf(file):
+    reader = PdfReader(file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+# Helper function to extract text from DOCX
+def extract_text_from_docx(file):
+    doc = docx.Document(file)
+    text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+    return text
+
 # --- Routes ---
 @app.route('/embed', methods=['POST'])
 @admin_required
 def embed_document():
     if 'file' in request.files:
         file = request.files['file']
-        file_name = file.filename
-        input_text = file.read().decode('utf-8')
+        file_name = secure_filename(file.filename)
+        file_extension = file_name.split('.')[-1].lower()
+
+        if file_extension == 'pdf':
+            input_text = extract_text_from_pdf(file)
+        elif file_extension == 'docx':
+            input_text = extract_text_from_docx(file)
+        else:
+            input_text = file.read().decode('utf-8')
     else:
         data = request.get_json()
         input_text = data.get('text')
