@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import logging
 import os
 import time
+from functools import wraps
 
 load_dotenv()
 
@@ -25,6 +26,7 @@ MODEL_ID_CHAT = os.getenv("MODEL_ID_CHAT", "us.amazon.nova-lite-v1:0")
 DATABASE_URL = os.getenv("DATABASE_URL")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "default_admin_token")
 
 # Initialize clients
 bedrock_runtime = boto3.client(
@@ -43,6 +45,17 @@ client = boto3.client(
 # --- Flask App ---
 app = Flask(__name__)
 CORS(app)
+
+# --- Admin Authentication ---
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if token != f"Bearer {ADMIN_TOKEN}":
+            logger.warning("Unauthorized access attempt to admin route.")
+            return jsonify({"error": "Unauthorized"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- Helpers ---
 def get_db_connection():
@@ -103,7 +116,7 @@ def retrieve_similar_chunks(query_embedding, top_k=3):
     return similarities[:top_k]
 
 def call_nova_llm(prompt):
-    system_prompt = [{"text": "You are a helpful assistant. Use the provided context to answer the user's question as accurately as possible."}]
+    system_prompt = [{"text": "You are a helpful assistant. Use only the provided context to answer the user's question as accurately as possible. Do not provide responses based on your own knowledge or assumptions."}]
     message_list = [{"role": "user", "content": [{"text": prompt}]}]
     inf_params = {"maxTokens": 512, "topP": 0.9, "topK": 20, "temperature": 0.7}
 
@@ -137,6 +150,7 @@ def call_nova_llm(prompt):
 
 # --- Routes ---
 @app.route('/embed', methods=['POST'])
+@admin_required
 def embed_document():
     if 'file' in request.files:
         file = request.files['file']
@@ -196,7 +210,7 @@ def chat():
         context = "\n\n".join([chunk_text for _, _, _, chunk_text in top_chunks])
         prompt = f"Context:\n{context}\n\nQuestion: {user_query}\nAnswer:"
 
-        system_prompt = [{"text": "You are a helpful assistant. Use the provided context to answer the user's question as accurately as possible."}]
+        system_prompt = [{"text": "You are a helpful assistant. Use only the provided context to answer the user's question as accurately as possible. Do not provide responses based on your own knowledge or assumptions."}]
         message_list = [{"role": "user", "content": [{"text": prompt}]}]
         inf_params = {"maxTokens": 1024, "topP": 0.9, "topK": 20, "temperature": 0.7}
 
@@ -236,4 +250,3 @@ def chat():
 if __name__ == "__main__":
     logger.info("Starting Flask app...")
     app.run(host="0.0.0.0", port=5000)
- 
