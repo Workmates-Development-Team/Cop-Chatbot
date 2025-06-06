@@ -1,21 +1,25 @@
-# Use the official uv image with Python 3.12 and Debian slim
+# Use a Python image with uv pre-installed
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-# Set the working directory
 WORKDIR /app
 
-# Install system dependencies needed to build psycopg2
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
-# Copy project files
-COPY . .
+# Install dependencies using lockfile and settings
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
 
-# Sync dependencies
-RUN uv sync
+# Copy the rest of the project source code and install it
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
-# Expose the port the app runs on
-EXPOSE 5000:5000
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Run the app
+ENTRYPOINT []
+
+# Run the Flask app using uv
 CMD ["uv", "run", "main.py"]
