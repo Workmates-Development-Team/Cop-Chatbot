@@ -9,12 +9,18 @@ from functools import wraps
 from PyPDF2 import PdfReader
 import docx
 import os
+import base64
+import jwt
+import datetime
+import io
+import boto3
 
 from config import (
     bedrock_runtime, client, DATABASE_URL, ADMIN_TOKEN, MODEL_ID_EMBED, MODEL_ID_CHAT,
-    # Add these for env-based admin credentials
-    ADMIN_USERNAME, ADMIN_PASSWORD
+    ADMIN_USERNAME, ADMIN_PASSWORD, AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, BEDROCK_REGION
 )
+
+JWT_SECRET = os.getenv("JWT_SECRET", "change_this_secret")
 
 logger = logging.getLogger(__name__)
 routes = Blueprint('routes', __name__)
@@ -24,9 +30,19 @@ CORS_origins = CORS
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if token != f"Bearer {ADMIN_TOKEN}":
-            logger.warning("Unauthorized access attempt to admin route.")
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            logger.warning("Missing or invalid Authorization header.")
+            return jsonify({"error": "Unauthorized"}), 403
+        token = auth_header.split(" ")[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            # Optionally, you can check payload["username"] here
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token expired.")
+            return jsonify({"error": "Token expired"}), 403
+        except jwt.InvalidTokenError:
+            logger.warning("Invalid JWT token.")
             return jsonify({"error": "Unauthorized"}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -103,6 +119,22 @@ def extract_text_from_docx(file):
     text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
     return text
 
+def extract_text_from_image_aws_textract(image_bytes):
+    textract_client = boto3.client(
+        'textract',
+        region_name=BEDROCK_REGION,
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+    )
+    response = textract_client.detect_document_text(
+        Document={'Bytes': image_bytes}
+    )
+    lines = []
+    for item in response.get("Blocks", []):
+        if item["BlockType"] == "LINE":
+            lines.append(item["Text"])
+    return "\n".join(lines)
+
 # --- Routes ---
 @routes.route('/embed', methods=['POST'])
 @admin_required
@@ -116,6 +148,20 @@ def embed_document():
             input_text = extract_text_from_pdf(file)
         elif file_extension == 'docx':
             input_text = extract_text_from_docx(file)
+        elif file_extension in ['jpg', 'jpeg', 'png']:
+            image_bytes = file.read()
+            try:
+                input_text = extract_text_from_image_aws_textract(image_bytes)
+            except Exception as e:
+                logger.error(f"AWS Textract failed: {e}")
+                input_text = ""
+        elif file_extension in ['gif', 'bmp', 'webp']:
+            image_bytes = file.read()
+            try:
+                input_text = extract_text_from_image_aws_textract(image_bytes)
+            except Exception as e:
+                logger.error(f"AWS Textract failed: {e}")
+                input_text = f"[IMAGE_BASE64]{base64.b64encode(image_bytes).decode('utf-8')}"
         else:
             input_text = file.read().decode('utf-8')
     else:
@@ -213,8 +259,12 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    # Use admin credentials imported from config.py
     if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-        return jsonify({"token": f"Bearer {ADMIN_TOKEN}"}), 200
+        payload = {
+            "username": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        }
+        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+        return jsonify({"token": token}), 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401

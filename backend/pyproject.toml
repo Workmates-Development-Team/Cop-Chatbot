@@ -13,4 +13,5 @@ dependencies = [
     "python-dotenv",
     "pypdf2",
     "python-docx",
+    "pyjwt>=2.10.1",
 ]
