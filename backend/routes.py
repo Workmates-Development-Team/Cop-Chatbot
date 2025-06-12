@@ -12,11 +12,10 @@ import os
 import base64
 import jwt
 import datetime
-import io
 import boto3
 
 from config import (
-    bedrock_runtime, client, DATABASE_URL, ADMIN_TOKEN, MODEL_ID_EMBED, MODEL_ID_CHAT,
+    bedrock_runtime, client, DATABASE_URL, MODEL_ID_EMBED, MODEL_ID_CHAT,
     ADMIN_USERNAME, ADMIN_PASSWORD, AWS_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, BEDROCK_REGION
 )
 
@@ -36,7 +35,7 @@ def admin_required(f):
             return jsonify({"error": "Unauthorized"}), 403
         token = auth_header.split(" ")[1]
         try:
-            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
             # Optionally, you can check payload["username"] here
         except jwt.ExpiredSignatureError:
             logger.warning("JWT token expired.")
