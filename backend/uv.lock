@@ -83,7 +83,7 @@ requires-dist = [
     { name = "flask-cors" },
     { name = "numpy" },
     { name = "psycopg2-binary" },
-    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "pyjwt" },
     { name = "pypdf2" },
     { name = "python-docx" },
     { name = "python-dotenv" },
