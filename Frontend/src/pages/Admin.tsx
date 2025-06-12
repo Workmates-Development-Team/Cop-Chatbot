@@ -1,35 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
 import Helplines from '@/components/Helplines';
-import { backend_url } from '@/components/Constant';
+
+const backend_url = 'http://127.0.0.1:5000';
 
 const Admin = () => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [fileUrls, setFileUrls] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
-
-  // --- Chat with Knowledge Base ---
   const [chatInput, setChatInput] = useState('');
-  const [chatResponse, setChatResponse] = useState('');
+  const [messages, setMessages] = useState([]);
   const [isChatting, setIsChatting] = useState(false);
+  const chatContainerRef = useRef(null);
 
-  // --- Admin Login ---
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  // Scroll to bottom of chat when messages update
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
-  const handleFileUpload = (files: FileList) => {
+  const handleFileUpload = (files) => {
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
-    const validFiles: File[] = [];
-    const invalidFiles: string[] = [];
+    const validFiles = [];
+    const invalidFiles = [];
 
     Array.from(files).forEach((file) => {
       if (validTypes.includes(file.type)) {
@@ -49,23 +50,22 @@ const Admin = () => {
 
     if (validFiles.length > 0) {
       setUploadedFiles((prev) => [...prev, ...validFiles]);
-      setFileUrls((prev) => [...prev, ...validFiles.map((file) => URL.createObjectURL(file))]);
       toast({
         title: 'Files Selected',
-        description: `${validFiles.map((file) => file.name).join(', ')} uploaded.`,
+        description: `${validFiles.map((file) => file.name).join(', ')} selected.`,
       });
     }
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (event) => {
     const files = event.target.files;
     if (files) {
       handleFileUpload(files);
-      event.target.value = ''; // Reset input
+      event.target.value = '';
     }
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
     const files = event.dataTransfer.files;
@@ -74,7 +74,7 @@ const Admin = () => {
     }
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (event) => {
     event.preventDefault();
     setIsDragging(true);
   };
@@ -87,25 +87,12 @@ const Admin = () => {
     if (uploadedFiles.length === 0) return;
     setIsUpdating(true);
     try {
-      const token = localStorage.getItem('token'); // Assumes JWT is stored in localStorage
-      if (!token) {
-        toast({
-          title: 'Not Authenticated',
-          description: 'Please log in as admin to upload documents.',
-          variant: 'destructive',
-        });
-        setIsUpdating(false);
-        return;
-      }
       let successCount = 0;
       for (const file of uploadedFiles) {
         const formData = new FormData();
         formData.append('file', file);
         const response = await fetch(`${backend_url}/embed`, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           body: formData,
         });
         if (response.ok) {
@@ -125,7 +112,6 @@ const Admin = () => {
           description: `Successfully uploaded and embedded ${successCount} file(s).`,
         });
         setUploadedFiles([]);
-        setFileUrls([]);
       }
     } catch (error) {
       toast({
@@ -138,12 +124,10 @@ const Admin = () => {
     }
   };
 
-  const handleRemoveFile = (index: number) => {
+  const handleRemoveFile = (index) => {
+    URL.revokeObjectURL(URL.createObjectURL(uploadedFiles[index]));
     const newFiles = uploadedFiles.filter((_, i) => i !== index);
-    const newUrls = fileUrls.filter((_, i) => i !== index);
-    URL.revokeObjectURL(fileUrls[index]); // Clean up URL
     setUploadedFiles(newFiles);
-    setFileUrls(newUrls);
     if (newFiles.length === 0) {
       toast({
         title: 'File Removed',
@@ -154,8 +138,12 @@ const Admin = () => {
 
   const handleChat = async () => {
     if (!chatInput.trim()) return;
+    
+    // Add user message to chat
+    setMessages((prev) => [...prev, { role: 'user', content: chatInput }]);
+    setChatInput('');
     setIsChatting(true);
-    setChatResponse('');
+
     try {
       const response = await fetch(`${backend_url}/chat`, {
         method: 'POST',
@@ -164,6 +152,7 @@ const Admin = () => {
         },
         body: JSON.stringify({ question: chatInput }),
       });
+
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         toast({
@@ -174,296 +163,249 @@ const Admin = () => {
         setIsChatting(false);
         return;
       }
+
       // Streamed response handling
       const reader = response.body?.getReader();
       if (reader) {
-        let result = '';
         const decoder = new TextDecoder();
+        let result = '';
+        setMessages((prev) => [...prev, { role: 'bot', content: '', isStreaming: true }]);
+
         while (true) {
           const { value, done } = await reader.read();
-          if (done) break;
-          result += decoder.decode(value, { stream: true });
-          setChatResponse((prev) => prev + decoder.decode(value, { stream: true }));
+          if (done) {
+            setMessages((prev) => 
+              prev.map((msg, idx) => 
+                idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg
+              )
+            );
+            break;
+          }
+          const chunk = decoder.decode(value, { stream: true });
+          result += chunk;
+          setMessages((prev) => 
+            prev.map((msg, idx) => 
+              idx === prev.length - 1 ? { ...msg, content: result } : msg
+            )
+          );
         }
       } else {
-        const text = await response.text();
-        setChatResponse(text);
+        const data = await response.json();
+        setMessages((prev) => [...prev, { role: 'bot', content: data.response || 'No response received.', isStreaming: false }]);
       }
     } catch (error) {
       toast({
         title: 'Chat Error',
-        description: 'An error occurred while chatting.',
+        description: 'An error occurred while communicating with the chatbot.',
         variant: 'destructive',
       });
+      setMessages((prev) => [...prev, { role: 'bot', content: 'Error: Could not connect to the chatbot.', isStreaming: false }]);
     } finally {
       setIsChatting(false);
     }
-  };
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    try {
-      const response = await fetch(`${backend_url}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        toast({
-          title: 'Login Failed',
-          description: data.error || 'Invalid credentials.',
-          variant: 'destructive',
-        });
-        setIsLoggingIn(false);
-        return;
-      }
-      const data = await response.json();
-      localStorage.setItem('token', data.token);
-      setIsLoggedIn(true);
-      toast({
-        title: 'Login Successful',
-        description: 'You are now logged in as admin.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Login Error',
-        description: 'An error occurred during login.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsLoggedIn(false);
-    setUploadedFiles([]);
-    setFileUrls([]);
-    toast({
-      title: 'Logged Out',
-      description: 'You have been logged out.',
-    });
   };
 
   return (
     <div className="bg-white">
       <Header />
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <Card className="w-full max-w-lg shadow-lg">
+        <Card className="w-full max-w-2xl shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Admin File Upload</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Admin Dashboard</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Admin Login UI */}
-            {!isLoggedIn && (
-              <div className="space-y-4 mb-6">
-                <h2 className="text-lg font-semibold text-center">Admin Login</h2>
-                <input
-                  type="text"
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="Username"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  disabled={isLoggingIn}
-                />
-                <input
-                  type="password"
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="Password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  disabled={isLoggingIn}
-                />
-                <Button
-                  onClick={handleLogin}
-                  disabled={isLoggingIn || !loginUsername || !loginPassword}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {isLoggingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Login'}
-                </Button>
+            {/* File Upload Section */}
+            {!uploadedFiles.length && (
+              <div
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 mb-4"
+                    disabled={isUploading}
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('file-upload');
+                      if (input) input.click();
+                    }}
+                  >
+                    <Upload className="w-7 h-7" />
+                  </Button>
+                  <p className="text-sm text-gray-600">
+                    Drag and drop PDFs or images here, or click to select
+                  </p>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/gif"
+                    onChange={handleInputChange}
+                    className="hidden"
+                    disabled={isUploading}
+                    multiple
+                  />
+                </label>
+                {isUploading && (
+                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Uploading...</span>
+                  </div>
+                )}
               </div>
             )}
-            {/* Logout button for logged in admin */}
-            {isLoggedIn && (
-              <div className="space-y-2">
+
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center">
+                  <label htmlFor="file-upload" className="cursor-pointer mb-2">
+                    <Button
+                      variant="default"
+                      size="icon"
+                      className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700"
+                      disabled={isUploading}
+                      type="button"
+                      onClick={() => {
+                        const input = document.getElementById('file-upload');
+                        if (input) input.click();
+                      }}
+                    >
+                      <Upload className="w-7 h-7" />
+                    </Button>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/gif"
+                      onChange={handleInputChange}
+                      className="hidden"
+                      disabled={isUploading}
+                      multiple
+                    />
+                  </label>
+                </div>
+                <p className="text-sm text-green-600 text-center">
+                  {uploadedFiles.length} file(s) uploaded: {uploadedFiles.map((file) => file.name).join(', ')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                  {uploadedFiles.map((file, index) => {
+                    const url = URL.createObjectURL(file);
+                    return (
+                      <div key={index} className="relative">
+                        {file.type === 'application/pdf' ? (
+                          <iframe
+                            src={url}
+                            title={`PDF Preview ${file.name}`}
+                            className="w-full h-40 border rounded-lg shadow-sm"
+                          />
+                        ) : (
+                          <img
+                            src={url}
+                            alt={`Uploaded Preview ${file.name}`}
+                            className="w-full h-40 object-contain border rounded-lg shadow-sm"
+                          />
+                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2 rounded-full"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Button
+                  onClick={handleUpdateKnowledgeBase}
+                  disabled={isUpdating}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  {isUpdating ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating...
+                    </span>
+                  ) : (
+                    `Update Knowledge Base (${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''})`
+                  )}
+                </Button>
                 <Button
                   variant="outline"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    uploadedFiles.forEach((file) => URL.revokeObjectURL(URL.createObjectURL(file)));
+                    setUploadedFiles([]);
+                    toast({
+                      title: 'Files Cleared',
+                      description: 'All uploaded files have been removed.',
+                    });
+                  }}
                   className="w-full"
                 >
-                  Logout
+                  Clear All
                 </Button>
               </div>
             )}
-            {/* Only show upload/chat UI if logged in */}
-            {isLoggedIn && (
-              <>
-                {!uploadedFiles.length && (
+
+            {/* Chat UI */}
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold mb-2">Chat with Knowledge Base</h2>
+              <div
+                ref={chatContainerRef}
+                className="min-h-[300px] max-h-[400px] border rounded-lg p-4 bg-gray-50 overflow-y-auto space-y-4"
+              >
+                {messages.length === 0 && (
+                  <div className="text-center text-gray-400">Start a conversation...</div>
+                )}
+                {messages.map((message, index) => (
                   <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'
-                    }`}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
+                    key={index}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <Button
-                        variant="default"
-                        size="icon"
-                        className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 mb-4"
-                        disabled={isUploading}
-                        type="button"
-                        onClick={() => {
-                          const input = document.getElementById('file-upload') as HTMLInputElement | null;
-                          if (input) input.click();
-                        }}
-                      >
-                        <Upload className="w-7 h-7" />
-                      </Button>
-                      <p className="text-sm text-gray-600">
-                        Drag and drop PDFs or images here, or click to select
-                      </p>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/png,image/gif"
-                        onChange={handleInputChange}
-                        className="hidden"
-                        disabled={isUploading}
-                        multiple
-                      />
-                    </label>
-                    {isUploading && (
-                      <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Uploading...</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {uploadedFiles.length > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center">
-                      {/* Show upload button even after files are uploaded */}
-                      <label htmlFor="file-upload" className="cursor-pointer mb-2">
-                        <Button
-                          variant="default"
-                          size="icon"
-                          className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700"
-                          disabled={isUploading}
-                          type="button"
-                          onClick={() => {
-                            const input = document.getElementById('file-upload') as HTMLInputElement | null;
-                            if (input) input.click();
-                          }}
-                        >
-                          <Upload className="w-7 h-7" />
-                        </Button>
-                        <input
-                          id="file-upload"
-                          type="file"
-                          accept="application/pdf,image/jpeg,image/png,image/gif"
-                          onChange={handleInputChange}
-                          className="hidden"
-                          disabled={isUploading}
-                          multiple
-                        />
-                      </label>
-                    </div>
-                    <p className="text-sm text-green-600 text-center">
-                      {uploadedFiles.length} file(s) uploaded: {uploadedFiles.map((file) => file.name).join(', ')}
-                    </p>
-                    <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-                      {uploadedFiles.map((file, index) => (
-                        <div key={index} className="relative">
-                          {file.type === 'application/pdf' ? (
-                            <iframe
-                              src={fileUrls[index]}
-                              title={`PDF Preview ${file.name}`}
-                              className="w-full h-40 border rounded-lg shadow-sm"
-                            />
-                          ) : (
-                            <img
-                              src={fileUrls[index]}
-                              alt={`Uploaded Preview ${file.name}`}
-                              className="w-full h-40 object-contain border rounded-lg shadow-sm"
-                            />
-                          )}
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 rounded-full"
-                            onClick={() => handleRemoveFile(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={handleUpdateKnowledgeBase}
-                      disabled={isUpdating}
-                      className="w-full bg-green-600 hover:bg-green-700"
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                      }`}
                     >
-                      {isUpdating ? (
-                        <span className="flex items-center gap-2">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                      {message.isStreaming && (
+                        <div className="flex items-center gap-1 mt-1">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Updating...
-                        </span>
-                      ) : (
-                        `Update Knowledge Base (${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''})`
+                          <span className="text-xs">Typing...</span>
+                        </div>
                       )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        fileUrls.forEach((url) => URL.revokeObjectURL(url)); // Clean up all URLs
-                        setUploadedFiles([]);
-                        setFileUrls([]);
-                        toast({
-                          title: 'Files Cleared',
-                          description: 'All uploaded files have been removed.',
-                        });
-                      }}
-                      className="w-full"
-                    >
-                      Clear All
-                    </Button>
+                    </div>
                   </div>
-                )}
-
-                {/* Chat UI */}
-                <div className="mt-8">
-                  <h2 className="text-lg font-semibold mb-2">Chat with Knowledge Base</h2>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      className="flex-1 border rounded px-3 py-2"
-                      placeholder="Ask a question about your uploaded documents..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      disabled={isChatting}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleChat(); }}
-                    />
-                    <Button
-                      onClick={handleChat}
-                      disabled={isChatting || !chatInput.trim()}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {isChatting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ask'}
-                    </Button>
-                  </div>
-                  <div className="min-h-[60px] border rounded p-3 bg-gray-50 text-sm whitespace-pre-line">
-                    {isChatting && !chatResponse && <span className="text-gray-400">Thinking...</span>}
-                    {chatResponse}
-                  </div>
-                </div>
-              </>
-            )}
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  className="flex-1 border rounded px-3 py-2"
+                  placeholder="Ask a question about your uploaded documents..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={isChatting}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleChat();
+                  }}
+                />
+                <Button
+                  onClick={handleChat}
+                  disabled={isChatting || !chatInput.trim()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
