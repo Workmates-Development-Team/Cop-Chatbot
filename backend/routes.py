@@ -136,7 +136,7 @@ def extract_text_from_image_aws_textract(image_bytes):
 
 # --- Routes ---
 @routes.route('/embed', methods=['POST'])
-@admin_required
+# @admin_required
 def embed_document():
     if 'file' in request.files:
         file = request.files['file']
