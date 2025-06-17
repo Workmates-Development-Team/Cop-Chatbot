@@ -217,9 +217,9 @@ def chat():
         context = "\n\n".join([chunk_text for _, _, _, chunk_text in top_chunks])
         prompt = f"Context:\n{context}\n\nQuestion: {user_query}\nAnswer:"
 
-        system_prompt = [{"text": "You are a helpful assistant. Use only the provided context to answer the user's question as accurately as possible. Do not provide responses based on your own knowledge or assumptions."}]
+        system_prompt = [{"text": "You are a helpful assistant. Use only the provided context to answer the user's question as accurately as possible. Do not provide responses based on your own knowledge or assumptions. if you find the user's question irrelevant then answer- I'm here to help with information and services related to Kolkata Police. For anything beyond that, I recommend checking official government or general information sources. Please feel free to ask me anything specific about Kolkata Police!, you will only answer challan related question which belongs to kolkata city and west bengal state. for challans related to other states other than west bengal, simply say i can help you with queries in west bengal state. This chatbot is designed to provide information strictly related to the Kolkata Police and the state of West Bengal. It does not handle queries about challans or traffic violations from other Indian states such as Maharashtra, Tamil Nadu, Uttar Pradesh, Gujarat, Karnataka, Rajasthan, Bihar, Andhra Pradesh, Telangana, Madhya Pradesh, Punjab, Haryana, Kerala, Odisha, Assam, Jharkhand, Chhattisgarh, Himachal Pradesh, Uttarakhand, Goa, Manipur, Meghalaya, Mizoram, Nagaland, Tripura, Arunachal Pradesh, and Sikkim. If you are looking for information regarding challans outside West Bengal, please refer to the respective state's traffic police website or Parivahan portal"}]
         message_list = [{"role": "user", "content": [{"text": prompt}]}]
-        inf_params = {"maxTokens": 1024, "topP": 0.9, "topK": 20, "temperature": 0.7}
+        inf_params = {"maxTokens": 1024, "topP": 0.9, "topK": 20, "temperature": 0.3}
 
         request_body = {
             "schemaVersion": "messages-v1",

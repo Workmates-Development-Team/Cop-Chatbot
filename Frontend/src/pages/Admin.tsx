@@ -6,8 +6,9 @@ import { Upload, Loader2, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import Header from '@/components/Header';
 import Helplines from '@/components/Helplines';
+import { backend_url } from '@/components/Constant';
 
-const backend_url = 'http://127.0.0.1:5000';
+// const backend_url = backend_url;
 
 const Admin = () => {
   const { toast } = useToast();
@@ -27,16 +28,16 @@ const Admin = () => {
     }
   }, [messages]);
 
-  const handleFileUpload = (files) => {
+  const handleFileUpload = (files: FileList | File[]) => {
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
-    const validFiles = [];
-    const invalidFiles = [];
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
 
-    Array.from(files).forEach((file) => {
-      if (validTypes.includes(file.type)) {
+    Array.from(files).forEach((file: File) => {
+      if (validTypes.includes(file?.type)) {
         validFiles.push(file);
       } else {
-        invalidFiles.push(file.name);
+        invalidFiles.push(file?.name);
       }
     });
 
