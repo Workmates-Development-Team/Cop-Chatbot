@@ -1,0 +1,150 @@
+.chatbod-area {
+  width: 508px;
+  height: 540px;
+  background: url('./assets/chatbot-bg.jpg');
+  margin: 0 auto;
+  padding: 20px 20px;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.dot {
+  height: 15px;
+  width: 15px;
+  background-color: green;
+  border-radius: 50%;
+  display: inline-block;
+  position: absolute;
+  top: 30x; /* Adjusted to align with top-right of police logo */
+  right: 9px; /* Adjusted to align with top-right of police logo */
+  border: 1px solid #fff;
+}
+
+.cross-img {
+  color: #2ba4ff;
+}
+
+.blue-box,
+.blue-box1 {
+  height: 80px;
+  width: 92%;              /* Shrink width so it doesn't touch the sides */
+  margin-left: auto;       /* Center horizontally */
+  margin-right: auto;      /* Center horizontally */
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  margin-top: 0px;
+  border-radius: 10px;
+  background-color: rgba(29, 39, 74, 0.5);
+}
+
+.scrollbar {
+  float: left;
+  height: 210px;      /* Reduced height to move scrollable area up */
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  margin-bottom: 0;   /* Remove extra space at bottom */
+}
+
+#wrapper {
+  text-align: center;
+  width: 100%;
+  margin: auto;
+}
+
+#style-1::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  border-radius: 10px; /* Corrected invalid value '6px10px' */
+  background-color: #1c1d23; /* Corrected to match original HTML */
+}
+
+#style-1::-webkit-scrollbar {
+  width: 8px; /* Consolidated duplicate rules, kept smaller width for consistency */
+  background-color: #1c1d23; /* Corrected to match original HTML */
+}
+
+#style-1::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  background-color: #ffc221;
+}
+
+.live-dot {
+  position: absolute;
+  bottom: 0;
+  right: -0.5px; /* Adjust as needed for your logo size */
+  z-index: 3;
+  box-shadow: 0 0 6px 2px #2ecc40;
+}
+
+.chatboat-inner {
+  margin-top: 20px; /* Add this line or adjust value as needed */
+}
+
+/* Chat message bubbles: add margin from edges and subtle border */
+.bg-light.text-dark,
+.bg-success.text-white {
+  background-color: rgba(25, 31, 52, 0.7) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.10);
+  margin-left: 12px;
+  margin-right: 12px;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+}
+
+/* User message bubble (optional: slightly different shade) */
+.bg-success.text-white {
+  background-color: rgba(76, 175, 80, 0.25) !important;
+  color: #fff !important;
+}
+
+/* Input and back button area: keep visually appealing and spaced */
+.p-3 {
+  background: rgba(29, 39, 74, 0.55) !important;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+  margin: 0 8px 8px 8px; /* Add spacing from left/right and bottom */
+}
+
+/* Input field inside chat: more rounded, subtle border, spacing */
+.chat-boxin input,
+input.flex-grow-1 {
+  background-color: rgba(29, 39, 74, 0.35) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.13) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 15px;
+  box-shadow: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+input.flex-grow-1::placeholder {
+  color: #b5c6e0 !important;
+  opacity: 1;
+}
+
+/* Back to Categories button: more transparent, visually appealing */
+.btn.btn-primary,
+.btn.btn-outline,
+button.btn,
+button.w-100 {
+  background-color: rgba(29, 39, 74, 0.45) !important;
+  border: 1px solid #4ade80 !important;
+  color: #4ade80 !important;
+  border-radius: 8px !important;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+  margin-top: 4px;
+}
+
+.btn.btn-primary:hover,
+.btn.btn-outline:hover,
+button.btn:hover,
+button.w-100:hover {
+  background-color: rgba(29, 39, 74, 0.7) !important;
+  color: #fff !important;
+  border-color: #ffc221 !important;
+}

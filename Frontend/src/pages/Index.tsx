@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import CommissionerMessage from '@/components/CommissionerMessage';
 import Helplines from '@/components/Helplines';
 import Chatbot from '@/components/Chatbot';
+import Chatbotnew from '@/components/Chatbot-new';
 
 const Index = () => {
   return (
@@ -81,7 +82,8 @@ const Index = () => {
       </section>
 
       <Helplines />
-      <Chatbot />
+      {/* <Chatbotnew/> */}
+      <Chatbot/>
     </div>
   );
 };
