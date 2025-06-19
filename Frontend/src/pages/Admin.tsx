@@ -19,6 +19,7 @@ const Admin = () => {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isChatting, setIsChatting] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const chatContainerRef = useRef(null);
 
   // Scroll to bottom of chat when messages update
@@ -139,11 +140,12 @@ const Admin = () => {
 
   const handleChat = async () => {
     if (!chatInput.trim()) return;
-    
+
     // Add user message to chat
     setMessages((prev) => [...prev, { role: 'user', content: chatInput }]);
     setChatInput('');
     setIsChatting(true);
+    setIsTyping(true); // Show typing indicator immediately
 
     try {
       const response = await fetch(`${backend_url}/chat`, {
@@ -162,6 +164,7 @@ const Admin = () => {
           variant: 'destructive',
         });
         setIsChatting(false);
+        setIsTyping(false);
         return;
       }
 
@@ -170,29 +173,38 @@ const Admin = () => {
       if (reader) {
         const decoder = new TextDecoder();
         let result = '';
-        setMessages((prev) => [...prev, { role: 'bot', content: '', isStreaming: true }]);
+        // Show typing indicator before answer starts streaming
+        setMessages((prev) => [
+          ...prev,
+          { role: 'bot', content: '', isStreaming: true }
+        ]);
 
         while (true) {
           const { value, done } = await reader.read();
           if (done) {
-            setMessages((prev) => 
-              prev.map((msg, idx) => 
+            setMessages((prev) =>
+              prev.map((msg, idx) =>
                 idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg
               )
             );
+            setIsTyping(false);
             break;
           }
           const chunk = decoder.decode(value, { stream: true });
           result += chunk;
-          setMessages((prev) => 
-            prev.map((msg, idx) => 
+          setMessages((prev) =>
+            prev.map((msg, idx) =>
               idx === prev.length - 1 ? { ...msg, content: result } : msg
             )
           );
         }
       } else {
         const data = await response.json();
-        setMessages((prev) => [...prev, { role: 'bot', content: data.response || 'No response received.', isStreaming: false }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'bot', content: data.response || 'No response received.', isStreaming: false }
+        ]);
+        setIsTyping(false);
       }
     } catch (error) {
       toast({
@@ -200,7 +212,11 @@ const Admin = () => {
         description: 'An error occurred while communicating with the chatbot.',
         variant: 'destructive',
       });
-      setMessages((prev) => [...prev, { role: 'bot', content: 'Error: Could not connect to the chatbot.', isStreaming: false }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'bot', content: 'Error: Could not connect to the chatbot.', isStreaming: false }
+      ]);
+      setIsTyping(false);
     } finally {
       setIsChatting(false);
     }
@@ -371,8 +387,8 @@ const Admin = () => {
                     <div
                       className={`max-w-[70%] p-3 rounded-lg ${
                         message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-blue-200 text-gray-900'
                       }`}
                     >
                       <ReactMarkdown>{message.content}</ReactMarkdown>
@@ -385,6 +401,15 @@ const Admin = () => {
                     </div>
                   </div>
                 ))}
+                {/* Typing indicator before answer comes */}
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[70%] p-3 rounded-lg bg-blue-600 text-white flex items-center gap-2">
+                     
+                      <span className="text-xs">Typing...</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 mt-2">
                 <input
