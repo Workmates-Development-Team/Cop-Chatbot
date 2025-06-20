@@ -11,6 +11,8 @@ import 'react-resizable/css/styles.css';
 import { backend_url } from '@/components/Constant';
 import police from './assets/Police.png'
 import logo from './assets/kp image.jpeg'
+import chatBg from './assets/chatbot-white-bg 1.jpg';
+import './Chatbot-new.css'
 
 const sectionIcons: Record<string, React.ReactNode> = {
   'general': <MessageCircle className="w-5 h-5 mr-1" />,
@@ -214,7 +216,14 @@ const Chatbot = () => {
           >
             <Card
               className="shadow-2xl flex flex-col"
-              style={{ width: `${size.width}px`, height: `${size.height}px` }}
+              style={{
+                width: `${size.width}px`,
+                height: `${size.height}px`,
+                backgroundImage: `url(${chatBg})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
             >
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 rounded-t-lg flex justify-between items-center">
@@ -248,9 +257,8 @@ const Chatbot = () => {
               </div>
               {/* Chat Area */}
               <div className="flex-1 flex flex-col h-full overflow-hidden">
-                {/* Section Buttons as chips below the welcome message */}
+                {/* Section Buttons */}
                 <div className="p-4 pb-0">
-                  {/* Section buttons */}
                   <div className="flex flex-wrap gap-2 justify-center">
                     {categories.map((cat) => (
                       <button
@@ -269,18 +277,15 @@ const Chatbot = () => {
                     ))}
                   </div>
                   <br/>
-                  {/* Greeting text below buttons with margin */}
-                  {/* <div className="font-semibold text-base text-blue-800 mt-4 mb-1 text-center">
-                    {categoryResponses[currentCategory]}
-                  </div> */}
                 </div>
+
                 {/* Messages */}
                 <div className="flex-1 px-4 pt-2 pb-4 overflow-y-auto space-y-3">
                   {messages.map((message, index) => (
                     <div key={index} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
                       <div
                         className={`max-w-[80%] p-3 rounded-lg ${
-                          message.isUser ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
+                          message.isUser ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-800'
                         }`}
                       >
                         {message.isUser ? (
@@ -300,15 +305,16 @@ const Chatbot = () => {
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-                {/* Input */}
-                <div className="border-t p-4">
+
+                {/* Input with solid background */}
+                <div className="border-t p-4 bg-white">
                   <div className="flex gap-2 mb-2">
                     <Input
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       placeholder="Type your message..."
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
+                      className="flex-1 chat-input-solid"
                       disabled={isLoading}
                     />
                     <Button onClick={handleSendMessage} size="sm" disabled={isLoading}>

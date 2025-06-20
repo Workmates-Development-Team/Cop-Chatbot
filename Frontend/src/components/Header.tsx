@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import logo from './assets/kp image.jpeg'
 
 const Header = () => {
   return (
@@ -29,7 +30,7 @@ const Header = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img 
-              src="/lovable-uploads/e0f5b6c9-bdd6-4461-b518-8ca973fa5b5f.png" 
+              src={logo} 
               alt="Kolkata Police Logo" 
               className="w-16 h-16"
             />
