@@ -177,7 +177,7 @@ const Chatbot = () => {
                   >
                     Online - Ready to help
                   </h3>
-                  <p style={{ color: '#fff', fontSize: '16px', textAlign: 'center' }}>
+                  <p style={{ color: '#fff', fontSize: '15px', textAlign: 'center' }}>
                     Welcome! How can we assist you today? <br />
                     <span style={{ color: '#ffc221', textAlign: 'center' ,fontSize: '19px'}}>
                      {currentView === 'categories'
@@ -266,37 +266,55 @@ const Chatbot = () => {
                       </div>
                     </div>
                     {/* Input and Back button */}
-                    <div className="p-3" style={{ background: 'rgba(29,39,74,0.3)', backdropFilter: 'blur(2px)' }}>
-                      <div className="d-flex gap-2 mb-2">
-                        <Input
-                          value={inputMessage}
-                          onChange={(e) => setInputMessage(e.target.value)}
-                          placeholder="Type your message..."
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                          className="flex-grow-1"
-                          disabled={isLoading}
-                          style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}
-                        />
-                        <Button
-                          onClick={handleSendMessage}
-                          size="sm"
-                          disabled={isLoading}
-                          style={{ background: 'rgba(76,175,80,0.7)', border: 'none' }}
-                        >
-                          <i className="fa fa-paper-plane" />
-                        </Button>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={resetChat}
-                        className="w-100"
-                        style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}
-                      >
-                        Back to Categories
-                      </Button>
+                    <div className="chatbot-input-row">
+  <div className="chatbot-input-group">
+    <input
+      type="text"
+      id="chat-input"
+      name="Type Your message"
+      placeholder="Type Your message"
+      required
+      value={inputMessage}
+      onChange={e => setInputMessage(e.target.value)}
+      onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+      disabled={isLoading}
+      className="chatbot-input"
+    />
+    <div
+      className="arrow-area"
+      style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+      onClick={!isLoading ? handleSendMessage : undefined}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="lucide lucide-send-icon lucide-send"
+        style={{ verticalAlign: 'middle' }}
+      >
+        <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+        <path d="m21.854 2.147-10.94 10.939" />
+      </svg>
+    </div>
+  </div>
+  <button
+    type="button"
+    className="btn btn-primary mt-2 chatbot-back-btn"
+    style={{ backgroundColor: "#1d3170" }}
+    onClick={resetChat}
+    disabled={isLoading}
+  >
+    Back to Categories
+  </button>
+</div>
                     </div>
-                  </div>
+               
                 )}
               </div>
             </div>
