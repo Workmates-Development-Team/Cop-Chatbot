@@ -82,8 +82,8 @@ const Index = () => {
       </section>
 
       <Helplines />
-      {/* <Chatbotnew/> */}
-      <Chatbot/>
+      <Chatbotnew/>
+      {/* <Chatbot/> */}
     </div>
   );
 };

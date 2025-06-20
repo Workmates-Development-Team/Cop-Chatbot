@@ -387,7 +387,7 @@ const Admin = () => {
                     <div
                       className={`max-w-[70%] p-3 rounded-lg ${
                         message.role === 'user'
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-gray-600 text-white'
                           : 'bg-blue-200 text-gray-900'
                       }`}
                     >
