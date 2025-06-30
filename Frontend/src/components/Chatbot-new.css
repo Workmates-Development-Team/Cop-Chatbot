@@ -10,3 +10,91 @@
   color: #666 !important;
   opacity: 1;
 }
+/* Existing styles (assumed to be in Chatbot-new.css) */
+.chatbot-drag-handle {
+  cursor: move;
+}
+
+.chat-input-solid {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+/* New styles for markdown tables */
+.markdown-table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+th {
+  background-color: #2563eb; /* Blue heading */
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 2px solid #1e40af;
+}
+
+td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+/* Ensure table is scrollable horizontally if too wide */
+.markdown-table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.markdown-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.markdown-table-container::-webkit-scrollbar-thumb {
+  background: #2563eb;
+  border-radius: 4px;
+}
+
+.markdown-table-container::-webkit-scrollbar-thumb:hover {
+  background: #1e40af;
+}
+
+/* Additional markdown styles for better spacing */
+.markdown-content {
+  line-height: 1.5;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.markdown-content p {
+  margin: 0.5rem 0;
+}
