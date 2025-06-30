@@ -7,7 +7,7 @@ load_dotenv()
 # --- AWS + DB Config ---
 BEDROCK_REGION = os.getenv("AWS_REGION", "us-east-1")
 MODEL_ID_EMBED = os.getenv("MODEL_ID_EMBED", "amazon.titan-embed-text-v2:0")
-MODEL_ID_CHAT = os.getenv("MODEL_ID_CHAT", "us.amazon.nova-lite-v1:0")
+MODEL_ID_CHAT = os.getenv("MODEL_ID_CHAT", "us.amazon.nova-pro-v1:0")
 DATABASE_URL = os.getenv("DATABASE_URL")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")

@@ -81,26 +81,39 @@ def embed_text(text, dimensions=256):
         logger.error(f"Embedding failed: {e}")
         raise
 
-def retrieve_similar_chunks(query_embedding, top_k=3):
+def retrieve_similar_chunks(query_embedding, top_k=3, query_text=None):
     try:
         conn, cursor = get_db_connection()
         cursor.execute("SELECT chunk_index, embedding, file_name, chunk_text FROM embeddings")
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
-        logger.info("Fetched embeddings from database.")
     except Exception as e:
         logger.error(f"Error retrieving embeddings: {e}")
         return []
+    
     similarities = []
     query_vec = np.array(query_embedding)
+    
+    # Add the reversed query embedding as an alternative if query_text is provided
+    if query_text:
+        reversed_query = " ".join(query_text.split()[::-1])  # Reverse the original query text
+        reversed_embedding = embed_text(reversed_query)
+        reversed_vec = np.array(reversed_embedding)
+    else:
+        reversed_vec = None
+    
     for chunk_index, embedding, file_name, chunk_text in rows:
         if embedding is None:
             continue
         emb_vec = np.array(embedding)
-        sim = np.dot(emb_vec, query_vec) / (np.linalg.norm(emb_vec) * np.linalg.norm(query_vec))
+        sim_original = np.dot(emb_vec, query_vec) / (np.linalg.norm(emb_vec) * np.linalg.norm(query_vec))
+        if reversed_vec is not None:
+            sim_reversed = np.dot(emb_vec, reversed_vec) / (np.linalg.norm(emb_vec) * np.linalg.norm(reversed_vec))
+            sim = max(sim_original, sim_reversed)
+        else:
+            sim = sim_original
         similarities.append((sim, chunk_index, file_name, chunk_text))
-    
     similarities.sort(key=lambda x: x[0], reverse=True)
     return similarities[:top_k]
 
@@ -211,15 +224,23 @@ def chat():
         return jsonify({'error': 'Missing question'}), 400
     try:
         query_embedding = embed_text(user_query)
-        top_chunks = retrieve_similar_chunks(query_embedding)
+        top_chunks = retrieve_similar_chunks(query_embedding, query_text=user_query)
+
+        logger.info(f"Original query: {user_query}")
+        logger.info(f"Top retrieved chunks: {top_chunks}")
 
         # Use chunk_text directly from DB (no file reads)
         context = "\n\n".join([chunk_text for _, _, _, chunk_text in top_chunks])
         prompt = f"Context:\n{context}\n\nQuestion: {user_query}\nAnswer:"
 
-        system_prompt = [{"text": "You are a helpful assistant. Use only the provided context to answer the user's question as accurately as possible. Do not provide responses based on your own knowledge or assumptions. if you find the user's question irrelevant then answer- I'm here to help with information and services related to Kolkata Police. For anything beyond that, I recommend checking official government or general information sources. Please feel free to ask me anything specific about Kolkata Police!, you will only answer challan related question which belongs to kolkata city and west bengal state. for challans related to other states other than west bengal, simply say i can help you with queries in west bengal state. This chatbot is designed to provide information strictly related to the Kolkata Police and the state of West Bengal. It does not handle queries about challans or traffic violations from other Indian states such as Maharashtra, Tamil Nadu, Uttar Pradesh, Gujarat, Karnataka, Rajasthan, Bihar, Andhra Pradesh, Telangana, Madhya Pradesh, Punjab, Haryana, Kerala, Odisha, Assam, Jharkhand, Chhattisgarh, Himachal Pradesh, Uttarakhand, Goa, Manipur, Meghalaya, Mizoram, Nagaland, Tripura, Arunachal Pradesh, and Sikkim. If you are looking for information regarding challans outside West Bengal, please refer to the respective state's traffic police website or Parivahan portal"}]
+        system_prompt = [{"text": """You are a helpful assistant for Kolkata police department. \
+Use only the provided context to answer the user's question as accurately as possible. \
+When questions are phrased in reverse (like 'CP is who' instead of 'who is CP'), \
+interpret them normally. For name searches, look for the name in any order in the \
+knowledge base and provide relevant information. If the question is not related to \
+the knowledge base, politely inform the user."""}]
         message_list = [{"role": "user", "content": [{"text": prompt}]}]
-        inf_params = {"maxTokens": 1024, "topP": 0.9, "topK": 20, "temperature": 0.3}
+        inf_params = {"maxTokens": 2048, "topP": 0.9, "topK": 20, "temperature": 0.9}
 
         request_body = {
             "schemaVersion": "messages-v1",
