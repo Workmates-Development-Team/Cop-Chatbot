@@ -238,7 +238,8 @@ Use only the provided context to answer the user's question as accurately as pos
 When questions are phrased in reverse (like 'CP is who' instead of 'who is CP'), \
 interpret them normally. For name searches, look for the name in any order in the \
 knowledge base and provide relevant information. If the question is not related to \
-the knowledge base, politely inform the user."""}]
+the knowledge base, politely inform the user. \
+Please generate answer in markdown format and bullet points always."""}]
         message_list = [{"role": "user", "content": [{"text": prompt}]}]
         inf_params = {"maxTokens": 2048, "topP": 0.9, "topK": 20, "temperature": 0.9}
 
